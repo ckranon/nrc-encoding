@@ -1,0 +1,3 @@
+.env
+nrc-emolex-dict/parlmint_with_emotions.rds
+base-dict/data-nrc-encoded.csv

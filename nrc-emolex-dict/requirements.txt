@@ -1,0 +1,4 @@
+pandas
+pyreadr
+python-dotenv
+psycopg[binary]

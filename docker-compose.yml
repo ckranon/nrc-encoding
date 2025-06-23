@@ -1,0 +1,73 @@
+services:
+  emotion-coding-postgres-db:
+    image: postgres:17
+    container_name: emotion-coding-postgres-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5433"
+    command: ["postgres", "-p", "5433"] # Tell PostgreSQL to listen on port 5433 internally
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres -p 5433"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - speech-encoding-shared-network # Already present, ensuring connection to shared network
+      - default # Keep default for internal communication within this compose project if needed
+
+  metabase:
+    image: metabase/metabase
+    container_name: metabase
+    ports:
+      - "3000:3000"
+    depends_on:
+      - emotion-coding-postgres-db
+    volumes:
+      - metabase_data:/metabase.db
+    # Metabase might also need to access the shared network if it's connecting to a DB outside its default
+    networks:
+      - speech-encoding-shared-network
+      - default # Keep default for internal communication if needed
+
+  upload-emolex-dict-app:
+    build: ./nrc-emolex-dict
+    container_name: upload-emolex-dict-app
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      emotion-coding-postgres-db:
+        condition: service_healthy
+    networks:
+      - speech-encoding-shared-network # Connect to the shared network
+      - default # Keep default for internal communication within this compose project if needed
+
+  upload-base-dict-app:
+    build: ./base-dict
+    container_name: upload-base-dict-app
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      emotion-coding-postgres-db:
+        condition: service_healthy
+    networks:
+      - speech-encoding-shared-network # Connect to the shared network
+      - default # Keep default for internal communication within this compose project if needed
+
+volumes:
+  pgdata:
+  metabase_data:
+
+networks:
+  speech-encoding-shared-network:
+    external: true # Declares that this network is created externally
+  default:
+    # Optional: You can explicitly define the default network for this compose file
+    # If not defined here, Docker Compose creates a default bridge network automatically.
+    # If you want to explicitly name it:
+    # name: nrc-encoding_default_network
