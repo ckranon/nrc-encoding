@@ -24,8 +24,6 @@ services:
     container_name: metabase
     ports:
       - "3000:3000"
-    depends_on:
-      - emotion-coding-postgres-db
     volumes:
       - metabase_data:/metabase.db
     # Metabase might also need to access the shared network if it's connecting to a DB outside its default
